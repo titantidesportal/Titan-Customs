@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Titan Customs — Vehicle Import Calculator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy: #0A1628; --slate: #1C2E4A; --deep: #060E1A;
+      --ocean: #00AEEF; --muted: #6B7A8D; --border: #D1DCE8;
+      --surface: #F5F7FA; --white: #ffffff;
+    }
+    body { font-family: 'Inter', Arial, sans-serif; background: var(--surface); color: var(--navy); min-height: 100vh; }
+
+    /* HEADER */
+    header { background: var(--navy); color: white; padding: 0.9rem 1.5rem; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 12px rgba(0,0,0,0.3); }
+    .logo-area { display: flex; align-items: center; gap: 12px; }
+    .logo-area img { width: 42px; height: 42px; border-radius: 8px; object-fit: contain; background: white; padding: 2px; }
+    .brand-name { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1rem; letter-spacing: 0.06em; }
+    .brand-sub { font-size: 0.6rem; color: var(--ocean); letter-spacing: 0.14em; text-transform: uppercase; }
+    .header-badge { background: var(--ocean); color: white; font-family: 'Space Grotesk', sans-serif; font-size: 0.7rem; font-weight: 700; padding: 4px 12px; border-radius: 20px; letter-spacing: 0.06em; }
+
+    /* LAYOUT */
+    main { max-width: 680px; margin: 0 auto; padding: 1.5rem 1rem 3rem; display: flex; flex-direction: column; gap: 1.25rem; }
+
+    /* DISCLAIMER */
+    .disclaimer { grid-column: 1 / -1; background: #FFF8E7; border-left: 4px solid #F59E0B; padding: 10px 14px; border-radius: 0 8px 8px 0; font-size: 0.78rem; color: #92400E; line-height: 1.6; }
+    .disclaimer strong { color: #78350F; }
+
+    /* CARDS */
+    .card { background: white; border-radius: 14px; border: 1px solid var(--border); overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+    .card-head { background: var(--navy); color: white; padding: 0.75rem 1.1rem; font-family: 'Space Grotesk', sans-serif; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; display: flex; align-items: center; gap: 8px; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ocean); flex-shrink: 0; }
+    .card-body { padding: 1.1rem; display: flex; flex-direction: column; gap: 0.85rem; }
+
+    /* FIELDS */
+    .field { display: flex; flex-direction: column; gap: 4px; }
+    label { font-size: 0.72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
+    .label-hint { font-weight: 400; text-transform: none; letter-spacing: 0; color: #9AAABB; font-size: 0.7rem; }
+    input[type="text"], input[type="number"], input[type="date"], select, textarea {
+      padding: 9px 12px; border: 1.5px solid var(--border); border-radius: 9px;
+      font-size: 0.9rem; font-family: inherit; color: var(--navy);
+      background: white; outline: none; width: 100%; transition: border-color 0.18s;
+    }
+    input:focus, select:focus { border-color: var(--ocean); }
+    .field-note { font-size: 0.7rem; color: var(--muted); line-height: 1.5; }
+    .input-row { display: flex; gap: 8px; }
+    .input-row input { flex: 1; min-width: 0; width: auto; }
+    .input-row select { flex: 0 0 auto; min-width: 100px; width: auto; }
+
+    /* ROE */
+    .roe-row { display: flex; flex-direction: column; gap: 6px; }
+    .roe-btn-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .roe-btn-row input[type="date"] { flex: 1; min-width: 130px; }
+    .fx-display { padding: 9px 13px; border-radius: 9px; font-size: 0.85rem; font-weight: 600; border: 1.5px solid; }
+    .fx-display.loading { background: #EEF6FD; border-color: #B0D8F0; color: #2980B9; }
+    .fx-display.error   { background: #FFF8E7; border-color: #F59E0B; color: #92400E; }
+    .fx-display         { background: #EDFBF0; border-color: #6BCB8B; color: #166534; }
+
+    /* CIF row */
+    .cif-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1rem; }
+    @media (max-width: 500px) { .cif-row { grid-template-columns: 1fr; } }
+    .cif-summary { background: linear-gradient(135deg,#E8F6FD,#D0EAF8); border: 1.5px solid var(--ocean); border-radius: 10px; padding: 0.85rem 1.1rem; }
+    .cif-label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; color: var(--ocean); margin-bottom: 2px; }
+    .cif-value { font-size: 1.35rem; font-weight: 700; color: var(--navy); font-family: 'Space Grotesk', sans-serif; }
+    .cif-note  { font-size: 0.68rem; color: #4a6080; margin-top: 4px; line-height: 1.4; }
+
+    /* HINT BUTTON */
+    .hint-btn { font-size: 0.68rem; font-weight: 600; color: var(--ocean); background: rgba(0,174,239,0.1); border: 1px solid rgba(0,174,239,0.35); border-radius: 5px; padding: 3px 9px; cursor: pointer; white-space: nowrap; transition: background 0.15s; }
+    .hint-btn:hover { background: rgba(0,174,239,0.22); }
+    .hint-btn.primary { background: rgba(0,174,239,0.18); }
+
+    /* TARIFF INFO */
+    .tariff-info { background: #EEF6FD; border: 1px solid #B0D8F0; border-radius: 10px; padding: 12px 14px; font-size: 0.78rem; line-height: 1.7; color: var(--navy); }
+    .tariff-info strong { color: var(--ocean); }
+
+    /* REBATE */
+    .rebate-toggle-row { display: flex; align-items: center; gap: 10px; }
+    .toggle-switch { position: relative; width: 42px; height: 24px; }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider { position: absolute; inset: 0; background: #CBD5E1; border-radius: 24px; cursor: pointer; transition: background 0.2s; }
+    .toggle-slider::before { content: ''; position: absolute; width: 18px; height: 18px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: transform 0.2s; }
+    input:checked + .toggle-slider { background: var(--ocean); }
+    input:checked + .toggle-slider::before { transform: translateX(18px); }
+    .rebate-cards { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+    .rebate-pill { padding: 7px 14px; border-radius: 20px; border: 1.5px solid var(--border); font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.15s; color: var(--muted); background: white; }
+    .rebate-pill.active { border-color: var(--ocean); background: rgba(0,174,239,0.1); color: var(--ocean); }
+
+    /* CALCULATE BUTTON */
+    .btn-calc { width: 100%; padding: 13px; border-radius: 12px; border: none; background: linear-gradient(135deg, #1C6FA8, var(--ocean)); color: white; font-family: 'Space Grotesk', sans-serif; font-size: 0.95rem; font-weight: 700; cursor: pointer; letter-spacing: 0.04em; display: flex; align-items: center; justify-content: center; gap: 8px; transition: opacity 0.15s; }
+    .btn-calc:hover { opacity: 0.9; }
+
+    /* RESULTS */
+    .results-card { background: var(--navy); border-radius: 14px; overflow: hidden; border: 1px solid var(--border); }
+    .results-head { background: var(--ocean); padding: 0.9rem 1.1rem; font-family: 'Space Grotesk', sans-serif; font-size: 0.82rem; font-weight: 700; color: white; letter-spacing: 0.07em; text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; }
+    .results-head button { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); border-radius: 6px; color: white; font-size: 0.7rem; padding: 3px 10px; cursor: pointer; }
+    #resultsBody { padding: 1rem; min-height: 200px; }
+    .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 200px; color: rgba(255,255,255,0.4); gap: 12px; text-align: center; font-size: 0.85rem; }
+    .result-line { display: flex; justify-content: space-between; align-items: flex-start; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.07); gap: 10px; }
+    .result-line.cif-highlight { background: rgba(0,174,239,0.12); border-radius: 7px; padding: 9px 10px; border-bottom: none; margin-bottom: 4px; }
+    .rl-label { color: rgba(255,255,255,0.85); font-size: 0.82rem; flex: 1; }
+    .rl-sub   { display: block; font-size: 0.68rem; color: rgba(255,255,255,0.45); margin-top: 2px; }
+    .rl-sched { font-size: 0.65rem; color: var(--ocean); opacity: 0.9; margin-left: 4px; }
+    .rl-value { color: white; font-weight: 700; font-size: 0.9rem; white-space: nowrap; font-family: 'Space Grotesk', sans-serif; }
+    .rl-value.zero { color: rgba(255,255,255,0.3); font-weight: 400; }
+    .divider  { border: none; border-top: 1px solid rgba(255,255,255,0.15); margin: 6px 0; }
+    .total-line { display: flex; justify-content: space-between; align-items: center; padding: 12px 0 4px; }
+    .tl-label { color: white; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 0.9rem; }
+    .tl-value { color: var(--ocean); font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1.3rem; }
+
+    /* ACTION BUTTONS */
+    .action-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+    .btn-export   { display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:9px;font-size:0.8rem;font-weight:600;cursor:pointer;border:1.5px solid white;background:transparent;color:white;transition:background 0.15s; }
+    .btn-export:hover { background:rgba(255,255,255,0.1); }
+    .btn-whatsapp { display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:9px;font-size:0.8rem;font-weight:600;cursor:pointer;border:none;background:#25D366;color:white;transition:opacity 0.15s; }
+    .btn-whatsapp:hover { opacity:0.88; }
+
+    /* COMPARE */
+    .compare-section { padding: 0 1rem 1rem; }
+    .compare-section h3 { color: rgba(255,255,255,0.6); font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+    .compare-grid { display: flex; gap: 10px; }
+    .compare-box { flex: 1; background: rgba(255,255,255,0.06); border-radius: 10px; padding: 12px; text-align: center; }
+    .compare-box.highlight { background: rgba(0,174,239,0.15); border: 1px solid rgba(0,174,239,0.4); }
+    .cb-label   { font-size: 0.7rem; color: rgba(255,255,255,0.5); margin-bottom: 4px; }
+    .cb-amount  { font-family: 'Space Grotesk', sans-serif; font-size: 1.1rem; font-weight: 700; color: white; }
+    .cb-savings { font-size: 0.72rem; color: #4ADE80; margin-top: 4px; }
+
+    /* PANELS */
+    .legal-panel { border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
+    .legal-panel-head { background: var(--slate); color: white; padding: 0.85rem 1.1rem; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; }
+    .legal-panel-head:hover { opacity: 0.9; }
+    .legal-panel-body { display: none; padding: 1.25rem; background: white; }
+    .legal-panel-body.open { display: block; }
+    .legal-notice ul { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+    .legal-notice li { font-size: 0.8rem; line-height: 1.6; color: #3a5070; }
+    .excludes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+    @media (max-width: 600px) { .excludes-grid { grid-template-columns: 1fr; } }
+    .exclude-item { display: flex; gap: 10px; align-items: flex-start; font-size: 0.78rem; line-height: 1.5; color: #3a5070; }
+    .ex-icon { font-size: 1.1rem; flex-shrink: 0; }
+    .exclude-item strong { color: var(--navy); display: block; font-size: 0.79rem; }
+
+    /* FOOTER */
+    footer { background: var(--navy); color: rgba(255,255,255,0.5); text-align: center; padding: 1.5rem 1rem; font-size: 0.75rem; line-height: 1.8; }
+    footer a { color: var(--ocean); text-decoration: none; }
+
+    @media print {
+      /* Hide everything except the print report */
+      body > * { display: none !important; }
+      #printReport { display: block !important; }
+      #printReport * { display: revert !important; }
+      /* Ensure clean page */
+      @page { margin: 0; size: A4; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo-area">
+    <img src="data:image/jpeg;base64,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aBY8bVVkN1Cuq00pIOq+GNcPRgPG4fPiDoKx3WnTnIYJQJ7BuK3Znn/aCCDLagEmIgjzGlYJ4H2ApiBGDIOS4bl15KOxD52aHxN4wJeeJ6v/AMav/9oADAMBAwITAxMAABDzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzyjzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzyjzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzyjzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzyjzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzyjzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzyjzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzyjzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzyjzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzyjzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzyjzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzyjzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzyjzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzwfGXXzzzzzzzzzzzzzzzzzzzzzzyjzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzyfT8MAvzzzzzzzzzzzzzzzzzzzzyjzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzyw/wD/APUZvPPPPPPPPPPPPPPPPPPPKPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPGAff8A9Dvzzzzzzzzzzzzzzzzzzyjzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz2n/AP8AwF/PPPPPPPPPPPPPPPPPKPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPLPPPPPPCvf/AP8AUP8APPPPPPPPPPPPPPPPKPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPLPPPPPHHNFgvf/wD+DXzzzzzzzzzzzzzzzyjzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzxzzzzzzzxzzsv/8A/wDWPPPPPPPPPPPPPPPPKPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPLPPPPPPPPPDNAwff8A9LfzzzzzzzzzzzzzzyjzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzUP/AP8A0fPPPPPPPPPPPPPPKPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPMPPPPPPPPPPLNAvP/ANJ7zzzzzzzzzzzzzyjzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzyzTzzzzzzzzzzi2n/wD9G88888888888888o888888888888888088888888888888888888Y8888888888oQa//AF/PPPPPPPPPPPPPKPPPPPPPPPPPPPPPFPPPPPPPPPPPPPPPPPPPPPGPPPPPPPPPPGJv/wBRbzzzzzzzzzzzzyjzzzzzzzzzzzzzzwzzzzzzzzzzzzzzzzzzzzzzxTzzzzzzzzyz/T/wXzzzzzzzzzzzzyjzzzzzzzzzzzzzzwzzzzzzzzzzzzzzzzzzzzyjxTTzzzzzzzzy2D/8DzzzzzzzzzzzzyjzzzzzzzzzzzzzzzTzzzzzzzzzzzzzzzzzzzzxQhDzzzzzzzzwgn//AG8888888888888o8888888888888880I888888888888888888880840888888888a//d8888888888888o888888888888888c8088888888888888888808880888888888M/9O8888888888888o88888888888888888c888888888888888888I88os88888888sX/ABePPPPPPPPPPPPPKPPPPPPPPPPPPPPPDPLMPPPPPPPPPPPPPPPPPLHPLFPPPPPPPPODPxfPPPPPPPPPPPPPKPPPPPPPPPPPPPPPKPPLNPPPPPPPPPPPPPPPPPPPPLPPPPPPPPKOPyPPPPPPPPPPPPPPKPPPPPPPPPPPPPPPPNPPPNPPPPPPPPPPPPPPPPPPPPPPPPPPPPPKZg/PPPPPPPPPPPPPKPPPPPPPPPPPPPPPPKPPPDNPPPPPPPPPPPPPPPFPPBPPPPPPPPKImfPPPPPPPPPPPPPPKPPPPPPPPPPPPPPPPLOPPPPPPPPPPPPPPPPPPPFPOFPPPPPPPPAAl/PPPPPPPPPPPPPPKPPPPPPPPPPPPPPPPPKNPPPLPPPPPPPPPPPPPKPPJPPPPPPPPEgU/PPPPPPPPPPPPPPPKPPPPPPPPPPPPPPPPPPONPPPPHOMPPPPPPPPPDPKHPPPPPPPJGCGvPPPPPPPPPPPPPPPKPPPPPPPPPPPPPPPPPPPGPPPPPPPPOOOMPPNLPODPPPPPPPLI4b/ADzzzzzzzzzzzzzzzyjzzzzzzzzzzzzzzzzzzzyzDzzzzzzzzzzzizzyxzzzzzzzw+nfzzzzzzzzzzzzzzzzzyjzzzzzzzzzzzzzzzzzzzzyzjzzzzzzzjCjzzzDzzzzzzzx1BXzzzzzzzzzzzzzzzzzzyjzzzzzzzzzzzzzzzzzzzzzzyhyzzDyzTRzCxRzzzzzzy3KDzzzzzzzzzzzzzzzzzzzzyjzzzzzzzzzzzzzzzzzzzzzzyxzjhiTDTTxzzzzzzzQiHH3zzzzzzzzzzzzzzzzzzzzzyjzzzzzzzzzzzzzzzzzzzzzzzzzzzwyhzzDDDTDzyxzzzzzzzzzzzzzzzzzzzzzzzzzzyjzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzyjzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzyjzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzyjzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzyjzzzzzzzzzzzzxzzyzyhTzzxzzjzzTTxxTzjzzzjzxzzxzSjzzxTTzjzzzzzzzzzzzzyjzzzzzzzzzzzzyzzxzyiwzgxzzTDxTxzxTzwzSRzzzyQxjijzzwjjxxzzzzzzzzzzzzyjzzzzzzzzzzzzzzzzzyjzyjyghijxTTzRTzzxRTzzzxTyziiwwyyCyjTzzzzzzzzzzzyjzzzzzzzzzzzzzzzzzyjzyjwTgDzRQRDxTzzxRTzzzxTizijwwziBxTTzzzzzzzzzzzyjzzzzzzzzzzzzzzTjzyjzyyzzzxzxRSxxzzzxxzzTTyzyjyjzzwTQzDzzzzzzzzzzzzyjzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzyjzzzzzzzzzzzzzzzzzzzzzzDzzDzzzzzzTzTzzjzTzDTzDzzzzzzzzzzzzzzzzzzzzzyjzzzzzzzzzzzzzzzzzzzzzxTzyyjSyzzzxQCwxzzyiyTjgTzzzzzzzzzzzzzzzzzzzzyjzzzzzzzzzzzzzzzzzzzzzxDCjyxxjxzzygRTzzzzxwDxhTzzzzzzzzzzzzzzzzzzzzyjzzzzzzzzzzzzzzzzzzzzzxzzwxzyyzzxyxzzzzxzwzzwxzzzzzzzzzzzzzzzzzzzzzyjzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzyjzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzyjzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzyjzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzyjzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzyjzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzyjzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzyjzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzyjDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDCD/2gAIAQMTAT8Q/wD6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" alt="Titan Tides" />
+    <div>
+      <div class="brand-name">TITAN TIDES</div>
+      <div class="brand-sub">Logistics</div>
+    </div>
+  </div>
+  <div class="header-badge">TITAN CUSTOMS v2.1</div>
+</header>
+
+<main>
+  <div class="disclaimer" style="grid-column:1/-1;">
+    <strong>Estimation only.</strong> SARS calculates final charges using the official Rate of Exchange (ROE) at the
+    Shipped On Board (SOB) date plus the declared customs value. This tool provides indicative figures only and
+    does not constitute a formal customs declaration or SARS assessment.
+  </div>
+
+
+
+    <!-- Vehicle Details -->
+    <div class="card">
+      <div class="card-head"><span class="dot"></span>Vehicle Details</div>
+      <div class="card-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 1rem;">
+          <div class="field">
+            <label>Year</label>
+            <input type="number" id="vehicleYear" placeholder="e.g. 1974" min="1900" max="2030" />
+          </div>
+          <div class="field">
+            <label>Date</label>
+            <input type="date" id="calcDate" />
+          </div>
+        </div>
+        <div class="field">
+          <label>Make</label>
+          <input type="text" id="vehicleMake" placeholder="e.g. Mercedes-Benz" />
+        </div>
+        <div class="field">
+          <label>Model</label>
+          <input type="text" id="vehicleModel" placeholder="e.g. 250S (W108)" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Vehicle Value & Shipping -->
+    <div class="card">
+      <div class="card-head"><span class="dot"></span>Vehicle Value &amp; Shipping Costs</div>
+      <div class="card-body">
+        <div class="field">
+          <label>Vehicle Purchase Price <span class="label-hint">— ex-works / purchase price</span></label>
+          <div class="input-row">
+            <input type="number" id="foreignAmount" placeholder="e.g. 125000" min="0" />
+            <select id="currency" onchange="onCurrencyChange()">
+              <optgroup label="Major">
+                <option value="GBP">GBP £ — British Pound</option>
+                <option value="EUR">EUR € — Euro</option>
+                <option value="USD">USD $ — US Dollar</option>
+                <option value="ZAR">ZAR R — South African Rand</option>
+              </optgroup>
+              <optgroup label="Asia Pacific">
+                <option value="JPY">JPY ¥ — Japanese Yen</option>
+                <option value="AUD">AUD A$ — Australian Dollar</option>
+                <option value="SGD">SGD S$ — Singapore Dollar</option>
+                <option value="HKD">HKD HK$ — Hong Kong Dollar</option>
+                <option value="CNY">CNY ¥ — Chinese Yuan</option>
+                <option value="KRW">KRW ₩ — South Korean Won</option>
+                <option value="NZD">NZD NZ$ — New Zealand Dollar</option>
+              </optgroup>
+              <optgroup label="Europe">
+                <option value="CHF">CHF Fr — Swiss Franc</option>
+                <option value="SEK">SEK kr — Swedish Krona</option>
+                <option value="NOK">NOK kr — Norwegian Krone</option>
+                <option value="DKK">DKK kr — Danish Krone</option>
+                <option value="CZK">CZK Kč — Czech Koruna</option>
+              </optgroup>
+              <optgroup label="Americas">
+                <option value="CAD">CAD C$ — Canadian Dollar</option>
+                <option value="BRL">BRL R$ — Brazilian Real</option>
+                <option value="MXN">MXN $ — Mexican Peso</option>
+              </optgroup>
+              <optgroup label="Middle East &amp; Africa">
+                <option value="AED">AED د.إ — UAE Dirham</option>
+                <option value="SAR">SAR ﷼ — Saudi Riyal</option>
+                <option value="QAR">QAR ﷼ — Qatari Riyal</option>
+                <option value="KWD">KWD د.ك — Kuwaiti Dinar</option>
+              </optgroup>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label>Rate of Exchange (ROE)</label>
+          <div class="roe-row">
+            <div class="fx-display loading" id="fxDisplay">Loading approximate rates…</div>
+            <div class="roe-btn-row">
+              <button type="button" class="hint-btn primary" onclick="refreshRates()">🔄 Refresh live rate</button>
+              <input type="date" id="roeDate" title="Pick SOB date" />
+              <button type="button" class="hint-btn" onclick="fetchRateForDate()">Fetch for date</button>
+            </div>
+          </div>
+          <div id="sarsRoeNote" style="display:none;font-size:0.75rem;background:#FFF8E7;border:1px solid #F59E0B;border-radius:8px;padding:8px 12px;color:#92400E;margin-top:4px;line-height:1.6;"></div>
+          <span class="field-note">Approximate rates load instantly. Click <strong>Refresh live rate</strong> for today's rate. For a specific <strong>SOB date</strong>, pick the date and click Fetch — if unavailable, the <a href="https://www.sars.gov.za/customs-and-excise/customs-procedures-and-insurance/rate-of-exchange/" target="_blank" style="color:var(--ocean);">SARS official ROE table</a> will be linked.</span>
+        </div>
+        <div class="field">
+          <label>Vehicle Value (ZAR) <span class="label-hint">— auto-calculated or enter directly</span></label>
+          <input type="number" id="zarValue" placeholder="Auto-calculated from price × ROE" min="0" oninput="updateCIF()" />
+          <span class="field-note">Rand value = Purchase Price × ROE. You may enter directly if you know the ZAR value.</span>
+        </div>
+        <div class="cif-row">
+          <div class="field">
+            <label>Freight (ZAR) <span class="label-hint">— optional</span>
+              <button type="button" class="hint-btn" onclick="applyFreightEstimate()">Use 10% estimate</button>
+            </label>
+            <input type="number" id="freightZAR" placeholder="e.g. 25000" min="0" oninput="updateCIF()" />
+            <span class="field-note">Actual shipping cost to SA port.</span>
+          </div>
+          <div class="field">
+            <label>Insurance (ZAR) <span class="label-hint">— optional</span></label>
+            <input type="number" id="insuranceZAR" placeholder="e.g. 1500" min="0" oninput="updateCIF()" />
+            <span class="field-note">Transit insurance cost in Rand.</span>
+          </div>
+        </div>
+        <div class="cif-summary" id="cifSummary" style="display:none;">
+          <div class="cif-label">Total Customs Value</div>
+          <div class="cif-value" id="cifValue">—</div>
+          <div class="cif-note">Vehicle Value + Freight + Insurance — SARS calculates all duties on this total.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tariff & Duty -->
+    <div class="card">
+      <div class="card-head"><span class="dot"></span>Tariff Code &amp; Duty Rates</div>
+      <div class="card-body">
+        <div class="field">
+          <label>Tariff Code <span class="label-hint">— enter 8-digit code</span></label>
+          <div class="input-row">
+            <input type="text" id="tariffCode" placeholder="e.g. 87032490" maxlength="20" />
+            <select id="tariffPreset" onchange="applyTariffPreset()" style="font-size:0.75rem;min-width:140px;">
+              <option value="">Select tariff code…</option>
+              <optgroup label="Petrol (Spark-ignition)">
+                <option value="87032290">8703.22.90 — Petrol, 1001–1500 cm³, Other</option>
+                <option value="87032390">8703.23.90 — Petrol, 1501–3000 cm³, Other</option>
+                <option value="87032490">8703.24.90 — Petrol, &gt;3000 cm³, Other</option>
+              </optgroup>
+              <optgroup label="Diesel (Compression-ignition)">
+                <option value="87033290">8703.32.90 — Diesel, 1501–2500 cm³, Other</option>
+                <option value="87033390">8703.33.90 — Diesel, &gt;2500 cm³, Other</option>
+              </optgroup>
+              <optgroup label="Electric / Hybrid">
+                <option value="87036090">8703.60.90 — BEV (plug-in electric), Other</option>
+                <option value="87034090">8703.40.90 — Hybrid (non plug-in), Other</option>
+              </optgroup>
+            </select>
+          </div>
+          <span class="field-note">Select a preset or type your own. Tariff 87.03 covers all passenger motor vehicles.</span>
+        </div>
+        <div class="field">
+          <label>Engine Capacity &amp; Fuel Type <span class="label-hint">— auto-suggests tariff code</span></label>
+          <div class="input-row">
+            <input type="number" id="engineCC" placeholder="e.g. 2494 cc" min="0" oninput="suggestTariffFromCC(this.value)" style="flex:1;" />
+            <select id="fuelType" onchange="suggestTariffFromCC(document.getElementById('engineCC').value)" style="min-width:110px;">
+              <option value="petrol">⛽ Petrol</option>
+              <option value="diesel">🛢️ Diesel</option>
+              <option value="electric">⚡ Electric</option>
+              <option value="hybrid">🔋 Hybrid</option>
+            </select>
+          </div>
+          <span class="field-note">Tariff code is auto-suggested when you enter CC + fuel type.</span>
+        </div>
+        <div class="tariff-info">
+          <strong>Tariff 87.03</strong> — Motor Cars &amp; Passenger Vehicles<br/>
+          <em style="font-size:0.72rem;color:var(--muted);">Principally designed for transport of persons, incl. station wagons</em><br/><br/>
+          <strong>GENERAL</strong> Rate of Duty: 25% &nbsp;|&nbsp; <strong>EU</strong> Rate of Duty: 18%<br/>
+          <strong>SADC</strong> Rate of Duty: FREE &nbsp;|&nbsp; <strong>EFTA</strong> Rate of Duty: 25%<br/><br/>
+          <strong>Environmental Levy:</strong> Second-hand cars — No CO₂ Environmental Levy<br/>
+          <strong>Part 2B Duty Exists</strong> (Ad Valorem on sliding scale, max 30%)<br/>
+          <strong>Rebate:</strong> 460.17/04.04 — Schedule 4, C&amp;E Act 1964
+        </div>
+        <div class="field">
+          <label>Country of Origin / Duty Rate</label>
+          <select id="dutyPreset" onchange="applyDutyPreset()">
+            <option value="25">General (e.g. GB, US, JP) — 25%</option>
+            <option value="18">EU (e.g. DE, FR, IT) — 18%</option>
+            <option value="0">SADC (e.g. ZW, ZM, MZ) — FREE (0%)</option>
+            <option value="25">EFTA — 25%</option>
+            <option value="custom">Custom rate…</option>
+          </select>
+        </div>
+        <div class="field" id="customRateField" style="display:none;">
+          <label>Custom Duty Rate (%)</label>
+          <input type="number" id="dutyRate" placeholder="e.g. 15" min="0" max="100" step="0.1" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Emissions & Levies -->
+    <div class="card">
+      <div class="card-head"><span class="dot"></span>Emissions &amp; Additional Levies</div>
+      <div class="card-body">
+        <div class="field">
+          <label>CO₂ Emissions <span class="label-hint">g/km — Schedule 1 Part 3A</span></label>
+          <input type="number" id="emissions" placeholder="Leave blank for second-hand (exempt)" min="0" />
+          <span class="field-note">New vehicles only. Second-hand imports are exempt from the CO₂ levy. Levy = R100 per g/km above 120 g/km.</span>
+        </div>
+        <div class="field">
+          <label>Tyre Levy <span class="label-hint">Schedule 1 Part 3E</span></label>
+          <input type="number" id="tyrLevy" value="230" min="0" />
+          <span class="field-note">Default R230 per vehicle (standard passenger tyre levy).</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rebate -->
+    <div class="card">
+      <div class="card-head"><span class="dot"></span>Age Rebate (Schedule 4)</div>
+      <div class="card-body">
+        <div class="rebate-toggle-row">
+          <label class="toggle-switch">
+            <input type="checkbox" id="rebateToggle" />
+            <span class="toggle-slider"></span>
+          </label>
+          <span style="font-size:0.82rem;font-weight:600;color:var(--navy);">Apply Age Rebate</span>
+        </div>
+        <div id="rebateOptions" style="display:none;">
+          <div class="rebate-cards">
+            <button class="rebate-pill" id="rebate5" onclick="selectRebate('5pct')">
+              <strong>5% Rebate</strong><br/><span style="font-weight:400;font-size:0.72rem;">Vehicle &gt; 20 years</span>
+            </button>
+            <button class="rebate-pill" id="rebate25" onclick="selectRebate('25pct')">
+              <strong>25% Rebate</strong><br/><span style="font-weight:400;font-size:0.72rem;">Vehicle &gt; 40 years</span>
+            </button>
+            <button class="rebate-pill" id="rebateFull" onclick="selectRebate('full')">
+              <strong>Full Rebate (0% Duty)</strong><br/><span style="font-weight:400;font-size:0.72rem;">Subject to SARS criteria</span>
+            </button>
+          </div>
+        </div>
+        <span class="field-note">Rebate reduces Ad Valorem Excise Duty. Full rebate also removes Customs Duty. All rebates subject to SARS approval.</span>
+      </div>
+    </div>
+
+    <button class="btn-calc" onclick="calculate()">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 7h6M9 12h6M9 17h4"/></svg>
+      Calculate Customs Charges
+    </button>
+
+
+
+
+    <div class="results-card">
+      <div class="results-head">
+        <span>Customs Breakdown</span>
+        <button onclick="resetForm()">— Reset</button>
+      </div>
+      <div id="resultsBody">
+        <div class="empty-state">
+          <svg width="32" height="32" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+          <p>Enter vehicle value and tariff settings,<br/>then click Calculate.</p>
+        </div>
+      </div>
+      <div class="compare-section" id="compareSection" style="display:none;">
+        <h3>With vs. Without Rebate</h3>
+        <div class="compare-grid" id="compareGrid"></div>
+      </div>
+    </div>
+
+
+</main>
+
+<!-- WHAT THIS EXCLUDES -->
+<div style="max-width:680px;margin:0 auto 1rem;padding:0 1rem;">
+  <div class="legal-panel">
+    <div class="legal-panel-head" onclick="togglePanel(this)"  data-body="excludesPanelBody" data-chev="excludesChevron">
+      <span>⚠️ What This Estimate Excludes</span>
+      <span id="excludesChevron">▼ expand</span>
+    </div>
+    <div class="legal-panel-body" id="excludesPanelBody">
+      <p style="font-size:0.8rem;color:#4a6080;line-height:1.6;margin-bottom:12px;">This estimate covers <strong>SARS duties and taxes only</strong>. These additional costs are <em>not included</em>:</p>
+      <div class="excludes-grid">
+        <div class="exclude-item"><span class="ex-icon">🚢</span><div><strong>Port &amp; Terminal Charges</strong>Port handling, THC, container examination fees</div></div>
+        <div class="exclude-item"><span class="ex-icon">🏗️</span><div><strong>Storage &amp; Demurrage</strong>Container storage and detention fees</div></div>
+        <div class="exclude-item"><span class="ex-icon">📋</span><div><strong>Customs Broker / Agent Fees</strong>Clearing and forwarding agent fees</div></div>
+        <div class="exclude-item"><span class="ex-icon">🚛</span><div><strong>Inland Transport</strong>Delivery from port to destination</div></div>
+        <div class="exclude-item"><span class="ex-icon">🔍</span><div><strong>Inspection &amp; Compliance</strong>NRCS homologation, RVI, roadworthy</div></div>
+        <div class="exclude-item"><span class="ex-icon">📝</span><div><strong>Licensing &amp; Registration</strong>Motor vehicle licensing, NATIS registration</div></div>
+      </div>
+      <p style="margin-top:12px;font-size:0.75rem;color:#6B7A8D;">Contact <a href="mailto:info@titantides.com" style="color:var(--ocean);">info@titantides.com</a> for a full landed cost quotation.</p>
+    </div>
+  </div>
+</div>
+
+<!-- REBATE & REGULATORY REFERENCE -->
+<div style="max-width:680px;margin:0 auto 2rem;padding:0 1rem;">
+  <div class="legal-panel">
+    <div class="legal-panel-head" onclick="togglePanel(this)" data-body="legalPanelBody" data-chev="legalChevron">
+      <span>📋 Rebate &amp; Regulatory Reference</span>
+      <span id="legalChevron">▼ expand</span>
+    </div>
+    <div class="legal-panel-body" id="legalPanelBody">
+      <div class="legal-notice">
+        <ul>
+          <li>📦 <strong>Total Customs Value</strong> is the base SARS uses for all duty calculations — vehicle purchase price + freight to port + insurance costs.</li>
+          <li>📊 <strong>Ad Valorem Excise Duty (Luxury Tax)</strong> is calculated on a sliding scale using the SARS statutory formula <em>[(0.00003 × B) − 0.75]%</em> where B is the Total Customs Value, subject to a statutory maximum of <strong>30%</strong>.</li>
+          <li>🕐 Vehicles over <strong>20 years old</strong> may qualify for a <strong>5% rebate</strong> on Ad Valorem Excise Duty.</li>
+          <li>🕐 Vehicles over <strong>40 years old</strong> may qualify for a <strong>25% rebate</strong> on Ad Valorem, subject to meeting the prescribed SARS criteria.</li>
+          <li>✅ Any approved rebate reduces the applicable <strong>Ad Valorem (Luxury Tax)</strong> only — Customs Duty and VAT are unaffected unless a full duty rebate is granted.</li>
+          <li>💰 <strong>VAT (15%)</strong> is calculated on the Added Tax Value (ATV) = Total Customs Value + Customs Duty + Ad Valorem + CO₂ Levy + <strong>10% upliftment</strong> on the Customs Value (mandatory for all non-SACU imports).</li>
+          <li>⚠️ SARS calculates final charges using the official <strong>Rate of Exchange (ROE)</strong> on the Shipped On Board (SOB) date — the rate shown here is for estimation only.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:1.5rem;margin-bottom:0.5rem;">
+    <a href="https://www.titantides.com" target="_blank">🌐 www.titantides.com</a>
+    <a href="mailto:info@titantides.com">✉ info@titantides.com</a>
+    <a href="tel:+27210012498">📞 +27 21 001 2498</a>
+  </div>
+  © 2026 Titan Tides Logistics · Titan Customs v2.1 · Estimates only — not a SARS assessment
+</footer>
+
+<div id="printReport" style="display:none;"></div>
+
+<script>
+  // ── STATE ─────────────────────────────────────────────────────────────────
+  let fxRates = {};
+  let selectedRebate = null;
+
+  // ── ON LOAD ───────────────────────────────────────────────────────────────
+  document.getElementById('calcDate').value = new Date().toISOString().split('T')[0];
+
+  // Load approximate rates immediately — app is usable right away
+  setTimeout(function() {
+    fxRates = { GBP: 23.50, EUR: 20.20, USD: 18.40, JPY: 0.122, AUD: 11.90, ZAR: 1, SGD: 13.80, HKD: 2.36, CNY: 2.54, KRW: 0.0133, NZD: 10.90, CHF: 20.50, SEK: 1.75, NOK: 1.68, DKK: 2.70, CZK: 0.79, CAD: 13.50, BRL: 3.40, MXN: 0.95, AED: 5.01, SAR: 4.90, QAR: 5.05, KWD: 60.20 };
+    updateFxDisplay(true);
+  }, 0);
+
+  // ── EXCHANGE RATE ─────────────────────────────────────────────────────────
+  function updateFxDisplay(isApprox) {
+    const currency = document.getElementById('currency').value;
+    const display  = document.getElementById('fxDisplay');
+    const rate     = fxRates[currency];
+    if (!rate) return;
+    if (isApprox) {
+      display.className = 'fx-display error';
+      display.textContent = '⚠ 1.00 ' + currency + ' ≈ R ' + rate.toFixed(4) + '  (approximate — click Refresh for live rate)';
+    } else {
+      display.className = 'fx-display';
+      display.textContent = '✓ 1.00 ' + currency + ' = R ' + rate.toFixed(4) + '  (live)';
+    }
+    recalcZar();
+  }
+
+  function onCurrencyChange() {
+    updateFxDisplay(Object.keys(fxRates).length > 0 && !document.getElementById('fxDisplay').textContent.includes('live'));
+  }
+
+  async function refreshRates() {
+    const display  = document.getElementById('fxDisplay');
+    display.className = 'fx-display loading';
+    display.textContent = '⏳ Fetching live rate…';
+    const t = (ms) => new Promise((_, r) => setTimeout(() => r('timeout'), ms));
+    // frankfurter.app — ECB data, fully open CORS, no API key
+    try {
+      const res = await Promise.race([
+        fetch('https://api.frankfurter.app/latest?from=ZAR&to=GBP,EUR,USD,JPY,AUD,SGD,HKD,CNY,KRW,NZD,CHF,SEK,NOK,DKK,CZK,CAD,BRL,MXN,AED,SAR,QAR,KWD'),
+        t(6000)
+      ]);
+      if (typeof res === 'string') throw new Error(res);
+      if (!res.ok) throw new Error('bad');
+      const d = await res.json();
+      if (!d.rates) throw new Error('no rates');
+      fxRates = { ZAR: 1 };
+      for (const [k,v] of Object.entries(d.rates)) fxRates[k] = 1/v;
+      updateFxDisplay(false);
+      return;
+    } catch(e1) {}
+    // Fallback: jsdelivr CDN currency API
+    try {
+      const res = await Promise.race([
+        fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/zar.json'),
+        t(6000)
+      ]);
+      if (typeof res === 'string') throw new Error(res);
+      const d = await res.json();
+      if (!d || !d.zar) throw new Error('bad');
+      fxRates = { ZAR: 1 };
+      const map = { gbp:'GBP', eur:'EUR', usd:'USD', jpy:'JPY', aud:'AUD', sgd:'SGD', hkd:'HKD', cny:'CNY', krw:'KRW', nzd:'NZD', chf:'CHF', sek:'SEK', nok:'NOK', dkk:'DKK', czk:'CZK', cad:'CAD', brl:'BRL', mxn:'MXN', aed:'AED', sar:'SAR', qar:'QAR', kwd:'KWD' };
+      for (const [k,K] of Object.entries(map)) if (d.zar[k]) fxRates[K] = 1/d.zar[k];
+      updateFxDisplay(false);
+      return;
+    } catch(e2) {}
+    // Keep approximate, show error
+    display.className = 'fx-display error';
+    const cur = document.getElementById('currency').value;
+    display.textContent = '⚠ Could not fetch live rate. 1.00 ' + cur + ' ≈ R ' + (fxRates[cur]||0).toFixed(4) + ' (approximate). Check internet connection.';
+  }
+
+  async function fetchRateForDate() {
+    const dateEl  = document.getElementById('roeDate');
+    const display = document.getElementById('fxDisplay');
+    const cur     = document.getElementById('currency').value;
+    if (!dateEl.value) { alert('Please pick a SOB date first.'); return; }
+    const d = dateEl.value; // YYYY-MM-DD
+    const [yr, mo, dy] = d.split('-');
+    display.className = 'fx-display loading';
+    display.textContent = '⏳ Fetching rate for ' + dy + '/' + mo + '/' + yr + '…';
+    const t = (ms) => new Promise((_, r) => setTimeout(() => r('timeout'), ms));
+
+    // Try 1: frankfurter.app (ECB data, good for recent dates)
+    try {
+      const res = await Promise.race([
+        fetch('https://api.frankfurter.app/' + d + '?from=ZAR&to=GBP,EUR,USD,JPY,AUD,SGD,HKD,CNY,KRW,NZD,CHF,SEK,NOK,DKK,CZK,CAD,BRL,MXN,AED,SAR,QAR,KWD'),
+        t(6000)
+      ]);
+      if (typeof res !== 'string' && res.ok) {
+        const data = await res.json();
+        if (data.rates) {
+          fxRates = { ZAR: 1 };
+          for (const [k,v] of Object.entries(data.rates)) fxRates[k] = 1/v;
+          const rate = fxRates[cur] || 0;
+          display.className = 'fx-display';
+          display.textContent = '✓ 1.00 ' + cur + ' = R ' + rate.toFixed(4) + ' on ' + dy + '/' + mo + '/' + yr + ' — verify against SARS official ROE';
+          recalcZar();
+          return;
+        }
+      }
+    } catch(e1) {}
+
+    // Try 2: jsdelivr CDN historical (has wider date range)
+    try {
+      const curLow = cur.toLowerCase();
+      const res = await Promise.race([
+        fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@' + d + '/v1/currencies/zar.json'),
+        t(6000)
+      ]);
+      if (typeof res !== 'string' && res.ok) {
+        const data = await res.json();
+        if (data && data.zar && data.zar[curLow]) {
+          fxRates[cur] = 1 / data.zar[curLow];
+          const rate = fxRates[cur];
+          display.className = 'fx-display';
+          display.textContent = '✓ 1.00 ' + cur + ' = R ' + rate.toFixed(4) + ' on ' + dy + '/' + mo + '/' + yr + ' — verify against SARS official ROE';
+          recalcZar();
+          return;
+        }
+      }
+    } catch(e2) {}
+
+    // Both failed — show SARS link and prompt manual entry
+    display.className = 'fx-display error';
+    display.textContent = '⚠ Could not fetch rate for ' + dy + '/' + mo + '/' + yr + '. Enter ZAR value directly, or check the SARS weekly exchange rate table.';
+    // Show SARS link below the display
+    const noteEl = document.getElementById('sarsRoeNote');
+    if (noteEl) {
+      noteEl.innerHTML = '📋 <a href="https://www.sars.gov.za/customs-and-excise/customs-procedures-and-insurance/rate-of-exchange/" target="_blank" style="color:var(--ocean);">Look up SARS official ROE table</a> for the week containing ' + dy + '/' + mo + '/' + yr + ', then enter the ZAR value directly below.';
+      noteEl.style.display = 'block';
+    }
+  }
+
+  function recalcZar() {
+    const foreign = parseFloat(document.getElementById('foreignAmount').value) || 0;
+    const currency = document.getElementById('currency').value;
+    const rate = fxRates[currency] || 0;
+    if (foreign > 0 && rate > 0) {
+      document.getElementById('zarValue').value = (foreign * rate).toFixed(2);
+    }
+    updateCIF();
+  }
+
+  document.getElementById('foreignAmount').addEventListener('input', recalcZar);
+
+  function updateCIF() {
+    const fob  = parseFloat(document.getElementById('zarValue').value) || 0;
+    const fr   = parseFloat(document.getElementById('freightZAR').value) || 0;
+    const ins  = parseFloat(document.getElementById('insuranceZAR').value) || 0;
+    const cif  = fob + fr + ins;
+    const el   = document.getElementById('cifSummary');
+    if (fob > 0) {
+      el.style.display = 'block';
+      document.getElementById('cifValue').textContent = 'R ' + cif.toLocaleString('en-ZA', {minimumFractionDigits:2, maximumFractionDigits:2});
+    } else {
+      el.style.display = 'none';
+    }
+  }
+
+  function applyFreightEstimate() {
+    let v = parseFloat(document.getElementById('zarValue').value) || 0;
+    if (!v) {
+      const f = parseFloat(document.getElementById('foreignAmount').value) || 0;
+      const r = fxRates[document.getElementById('currency').value] || 0;
+      if (f && r) { v = f * r; document.getElementById('zarValue').value = v.toFixed(2); }
+    }
+    if (!v) { alert('Enter a vehicle value first.'); return; }
+    document.getElementById('freightZAR').value = (v * 0.10).toFixed(2);
+    updateCIF();
+  }
+
+  // ── TARIFF & DUTY ─────────────────────────────────────────────────────────
+  function applyTariffPreset() {
+    const v = document.getElementById('tariffPreset').value;
+    if (v) document.getElementById('tariffCode').value = v;
+  }
+
+  function suggestTariffFromCC(cc) {
+    const n    = parseInt(cc, 10);
+    if (!n) return;
+    const fuel = (document.getElementById('fuelType') || {value:'petrol'}).value;
+    let code   = '';
+    // Map to the correct SARS "Other" tariff codes per 87.03 tariff book
+    if (fuel === 'electric') {
+      code = '87036090'; // BEV plug-in, Other
+    } else if (fuel === 'hybrid') {
+      code = '87034090'; // Hybrid non plug-in, Other
+    } else if (fuel === 'diesel') {
+      // 8703.32.90 = 1501–2500cm³ | 8703.33.90 = >2500cm³
+      code = n <= 2500 ? '87033290' : '87033390';
+    } else {
+      // Petrol: 8703.22.90 = 1001-1500 | 8703.23.90 = 1501-3000 | 8703.24.90 = >3000
+      // Note: ≤1000cc not in simplified list — default to 8703.22.90
+      code = n <= 1500 ? '87032290' : n <= 3000 ? '87032390' : '87032490';
+    }
+    document.getElementById('tariffCode').value = code;
+    const sel = document.getElementById('tariffPreset');
+    if (sel) {
+      for (let o of sel.options) { if (o.value === code) { sel.value = code; break; } }
+    }
+  }
+
+  function applyDutyPreset() {
+    const v  = document.getElementById('dutyPreset').value;
+    const cf = document.getElementById('customRateField');
+    cf.style.display = (v === 'custom') ? 'flex' : 'none';
+  }
+
+  function getDutyRate() {
+    const p = document.getElementById('dutyPreset').value;
+    if (p === 'custom') return parseFloat(document.getElementById('dutyRate').value) || 0;
+    return parseFloat(p) || 0;
+  }
+
+  // ── REBATE ────────────────────────────────────────────────────────────────
+  document.getElementById('rebateToggle').addEventListener('change', function() {
+    document.getElementById('rebateOptions').style.display = this.checked ? 'block' : 'none';
+    if (!this.checked) { selectedRebate = null; document.querySelectorAll('.rebate-pill').forEach(p => p.classList.remove('active')); }
+  });
+
+  function selectRebate(type) {
+    selectedRebate = type;
+    document.querySelectorAll('.rebate-pill').forEach(p => p.classList.remove('active'));
+    const map = { '5pct':'rebate5', '25pct':'rebate25', 'full':'rebateFull' };
+    if (map[type]) document.getElementById(map[type]).classList.add('active');
+  }
+
+  // ── CALCULATION ───────────────────────────────────────────────────────────
+  function fmt(n) {
+    return 'R ' + (n||0).toLocaleString('en-ZA', {minimumFractionDigits:2, maximumFractionDigits:2});
+  }
+
+  function calcAdValorem(cifValue, adValoremRebatePct) {
+    // SARS Schedule 1 Part 2B — B = Total Customs Value
+    // Rate% = (0.00003 × B) − 0.75, capped at 30%
+    const B       = cifValue;
+    const rawRate = Math.min(30, Math.max(0, 0.00003 * B - 0.75));
+    const mult    = 1 - (adValoremRebatePct / 100);
+    return { amount: (B * rawRate / 100) * mult, rate: rawRate, B };
+  }
+
+  function calcEmissions(gPerKm, isSecondHand) {
+    if (isSecondHand || !gPerKm || gPerKm <= 120) return 0;
+    return (gPerKm - 120) * 100;
+  }
+
+  function calcVAT(cifValue, duty, adVal, emissions) {
+    // ATV = CIF + Duty + AdVal + Emissions + 10% uplift on CIF
+    return (cifValue + duty + adVal + emissions + cifValue * 0.10) * 0.15;
+  }
+
+  function calculate() {
+    let fobZAR = parseFloat(document.getElementById('zarValue').value) || 0;
+    if (!fobZAR) {
+      const f = parseFloat(document.getElementById('foreignAmount').value) || 0;
+      const r = fxRates[document.getElementById('currency').value] || 0;
+      if (f && r) { fobZAR = f * r; document.getElementById('zarValue').value = fobZAR.toFixed(2); }
+    }
+    if (!fobZAR || fobZAR <= 0) {
+      alert('Please enter a vehicle value. Either enter a purchase price (the rate will auto-calculate) or type the ZAR value directly into Vehicle Value (ZAR).');
+      return;
+    }
+
+    const freightZAR   = parseFloat(document.getElementById('freightZAR').value) || 0;
+    const insuranceZAR = parseFloat(document.getElementById('insuranceZAR').value) || 0;
+    const cifValue     = fobZAR + freightZAR + insuranceZAR;
+    const dutyRatePct  = getDutyRate();
+    const emissionsGKm = parseFloat(document.getElementById('emissions').value) || 0;
+    const tyrLevy      = parseFloat(document.getElementById('tyrLevy').value) || 0;
+    const isSecondHand = !document.getElementById('emissions').value;
+    const useRebate    = document.getElementById('rebateToggle').checked;
+
+    let effectiveDutyRate = dutyRatePct / 100;
+    let adValoremRebatePct = 0;
+    let modeLabel = 'Standard';
+
+    if (useRebate && selectedRebate) {
+      if (selectedRebate === 'full')  { effectiveDutyRate = 0; modeLabel = 'Full Rebate'; }
+      if (selectedRebate === '5pct')  { adValoremRebatePct = 5;  modeLabel = '5% Age Rebate'; }
+      if (selectedRebate === '25pct') { adValoremRebatePct = 25; modeLabel = '25% Age Rebate'; }
+    }
+
+    const duty      = cifValue * effectiveDutyRate;
+    const adValRes  = calcAdValorem(cifValue, adValoremRebatePct);
+    const emission  = calcEmissions(emissionsGKm, isSecondHand);
+    const vat       = calcVAT(cifValue, duty, adValRes.amount, emission);
+    const total     = duty + adValRes.amount + emission + tyrLevy + vat;
+
+    let totalNoRebate = total;
+    if (useRebate && selectedRebate) {
+      const dutyNR = cifValue * (dutyRatePct / 100);
+      const adNR   = calcAdValorem(cifValue, 0);
+      const emNR   = calcEmissions(emissionsGKm, isSecondHand);
+      const vatNR  = calcVAT(cifValue, dutyNR, adNR.amount, emNR);
+      totalNoRebate = dutyNR + adNR.amount + emNR + tyrLevy + vatNR;
+    }
+
+    const vYear = document.getElementById('vehicleYear').value || '';
+    const vMake = document.getElementById('vehicleMake').value || '';
+    const vModel= document.getElementById('vehicleModel').value || '';
+    const vTariff = document.getElementById('tariffCode').value || '87.03';
+    const vCC   = document.getElementById('engineCC').value;
+    const vehicleName = [vYear, vMake, vModel].filter(Boolean).join(' ') || 'Vehicle';
+    const vehicleHeader = '<div style="padding:0 0 10px;border-bottom:1px solid rgba(255,255,255,0.1);margin-bottom:10px;">' +
+      '<div style="font-family:Space Grotesk,sans-serif;font-size:1.05rem;font-weight:700;color:white;">' + vehicleName + '</div>' +
+      '<div style="font-size:0.72rem;color:rgba(255,255,255,0.45);margin-top:2px;">Tariff: ' + vTariff + (vCC ? ' | ' + vCC + ' cc' : '') + '</div></div>';
+
+    const cifBreak = freightZAR > 0 || insuranceZAR > 0
+      ? fmt(fobZAR) + (freightZAR > 0 ? ' + Freight ' + fmt(freightZAR) : '') + (insuranceZAR > 0 ? ' + Insurance ' + fmt(insuranceZAR) : '')
+      : 'Vehicle value only';
+
+    const emLabel = isSecondHand ? 'CO₂ Emissions Levy<span class="rl-sub">Second-hand vehicle — exempt</span>' : 'CO₂ Emissions Levy <span class="rl-sched">(Schedule No. 1, Part 3A)</span><span class="rl-sub">' + emissionsGKm + ' g/km</span>';
+
+    document.getElementById('resultsBody').innerHTML = vehicleHeader +
+      '<div class="result-line cif-highlight">' +
+        '<span class="rl-label">Total Customs Value<span class="rl-sub">' + cifBreak + '</span></span>' +
+        '<span class="rl-value">' + fmt(cifValue) + '</span></div>' +
+      '<div class="result-line">' +
+        '<span class="rl-label">Customs Duty <span class="rl-sched">(Schedule No. 1, Part 1)</span><span class="rl-sub">' + (effectiveDutyRate === 0 && useRebate ? dutyRatePct + '% → 0% (Full Rebate)' : dutyRatePct + '%') + '</span></span>' +
+        '<span class="rl-value ' + (duty===0?'zero':'') + '">' + fmt(duty) + '</span></div>' +
+      '<div class="result-line">' +
+        '<span class="rl-label">Ad Valorem Excise Duty (Luxury Tax) <span class="rl-sched">(Schedule No. 1, Part 2B)</span><span class="rl-sub">Rate: ' + adValRes.rate.toFixed(2) + '% on ' + fmt(adValRes.B) + (adValoremRebatePct > 0 ? ' · ' + adValoremRebatePct + '% rebate applied' : '') + '</span></span>' +
+        '<span class="rl-value">' + fmt(adValRes.amount) + '</span></div>' +
+      '<div class="result-line">' +
+        '<span class="rl-label">' + emLabel + '</span>' +
+        '<span class="rl-value ' + (emission===0?'zero':'') + '">' + fmt(emission) + '</span></div>' +
+      '<div class="result-line">' +
+        '<span class="rl-label">Tyre Levy <span class="rl-sched">(Schedule No. 1, Part 3E)</span></span>' +
+        '<span class="rl-value ' + (tyrLevy===0?'zero':'') + '">' + fmt(tyrLevy) + '</span></div>' +
+      '<hr class="divider"/>' +
+      '<div class="result-line">' +
+        '<span class="rl-label">Customs VAT (15%) <span class="rl-sched">(VAT Act, s.7(1)(b))</span><span class="rl-sub">ATV = Customs Value + 10% uplift + Duty + Ad Valorem + Emissions</span></span>' +
+        '<span class="rl-value">' + fmt(vat) + '</span></div>' +
+      '<div class="total-line">' +
+        '<span class="tl-label">Total Estimated Customs</span>' +
+        '<span class="tl-value">' + fmt(total) + '</span></div>' +
+      '<div class="action-row">' +
+        '<button class="btn-export" onclick="buildAndPrint()">' +
+          '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>' +
+          'Print / Save PDF</button>' +
+        '<button class="btn-whatsapp" onclick="shareWhatsApp()">' +
+          '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M11.999 2C6.477 2 2 6.477 2 12c0 1.821.487 3.53 1.338 5L2 22l5.233-1.316C8.835 21.508 10.388 22 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2z"/></svg>' +
+          'WhatsApp</button>' +
+
+      '</div>';
+
+    if (useRebate && selectedRebate && totalNoRebate !== total) {
+      const savings = totalNoRebate - total;
+      document.getElementById('compareSection').style.display = 'block';
+      document.getElementById('compareGrid').innerHTML =
+        '<div class="compare-box"><div class="cb-label">Without Rebate</div><div class="cb-amount">' + fmt(totalNoRebate) + '</div></div>' +
+        '<div class="compare-box highlight"><div class="cb-label">With ' + modeLabel + '</div><div class="cb-amount">' + fmt(total) + '</div><div class="cb-savings">▼ Saving ' + fmt(savings) + '</div></div>';
+    } else {
+      document.getElementById('compareSection').style.display = 'none';
+    }
+  }
+
+  // ── PANELS ────────────────────────────────────────────────────────────────
+  function togglePanel(el) {
+    const bodyId   = el.dataset.body;
+    const chevId   = el.dataset.chev;
+    const body = document.getElementById(bodyId);
+    const chev = document.getElementById(chevId);
+    if (!body || !chev) return;
+    const open = body.classList.toggle('open');
+    chev.textContent = open ? '▲ collapse' : '▼ expand';
+  }
+
+  function resetForm() {
+    document.getElementById('resultsBody').innerHTML = '<div class="empty-state"><svg width="32" height="32" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg><p>Enter vehicle value and tariff settings,<br/>then click Calculate.</p></div>';
+    document.getElementById('compareSection').style.display = 'none';
+  }
+
+  // ── SHARE ─────────────────────────────────────────────────────────────────
+  function buildShareSummary() {
+    const totalEl = document.querySelector('#resultsBody .tl-value');
+    if (!totalEl) return null;
+    const vehicle = [document.getElementById('vehicleYear').value, document.getElementById('vehicleMake').value, document.getElementById('vehicleModel').value].filter(Boolean).join(' ') || 'Vehicle';
+    const lines = [];
+    document.querySelectorAll('#resultsBody .result-line').forEach(row => {
+      const lbl = row.querySelector('.rl-label');
+      const val = row.querySelector('.rl-value');
+      if (lbl && val) lines.push(lbl.childNodes[0].textContent.trim() + ': ' + val.textContent.trim());
+    });
+    return { vehicle, total: totalEl.textContent.trim(), lines };
+  }
+
+  function shareWhatsApp() {
+    const s = buildShareSummary();
+    if (!s) { alert('Please calculate first.'); return; }
+    const msg = '\ud83d\ude97 *Titan Tides Customs Estimate*\n*' + s.vehicle + '*\n\n' + s.lines.join('\n') + '\n\n*TOTAL: ' + s.total + '*\n\n_Estimate only - not a SARS assessment_\ntitantidesportal.github.io/Titan-Customs';
+    window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+  }
+
+
+
+  // ── PRINT / PDF ───────────────────────────────────────────────────────────
+  function buildAndPrint() {
+    const zarVal     = document.getElementById('zarValue').value || '';
+    if (!zarVal) { alert('Please calculate first.'); return; }
+    const vYear  = document.getElementById('vehicleYear').value || '';
+    const vMake  = document.getElementById('vehicleMake').value || '';
+    const vModel = document.getElementById('vehicleModel').value || '';
+    const vTariff= document.getElementById('tariffCode').value || '87.03';
+    const vCC    = document.getElementById('engineCC').value ? document.getElementById('engineCC').value + ' cc' : '';
+    const vDate  = document.getElementById('calcDate').value
+      ? new Date(document.getElementById('calcDate').value).toLocaleDateString('en-ZA',{day:'2-digit',month:'long',year:'numeric'})
+      : new Date().toLocaleDateString('en-ZA',{day:'2-digit',month:'long',year:'numeric'});
+    const currency   = document.getElementById('currency').value;
+    const foreignAmt = document.getElementById('foreignAmount').value || '';
+    const fxRate     = fxRates[currency] ? fxRates[currency].toFixed(4) : '';
+    const freightVal = parseFloat(document.getElementById('freightZAR').value) || 0;
+    const insVal     = parseFloat(document.getElementById('insuranceZAR').value) || 0;
+    const cifVal     = (parseFloat(zarVal) || 0) + freightVal + insVal;
+    const fmtR = (n) => 'R ' + (n||0).toLocaleString('en-ZA',{minimumFractionDigits:2,maximumFractionDigits:2});
+        const logoSrc = document.querySelector('.logo-area img').src;
+    const report = document.getElementById('printReport');
+    report.innerHTML = `
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;700&display=swap');
+      *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+      html,body{background:#F0F3F7;font-family:'Inter',Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+
+      /* ── PAGE WRAPPER ── */
+      .rpt{width:190mm;margin:0 auto;background:#F0F3F7;padding:0 0 10mm;}
+
+      /* ── HEADER ── */
+      .rpt-hdr{background:#0A1628;padding:14px 22px 12px;display:flex;justify-content:space-between;align-items:center;}
+      .rpt-hdr-left{display:flex;align-items:center;gap:12px;}
+      .rpt-logo{width:42px;height:42px;border-radius:7px;background:white;padding:2px;object-fit:contain;display:block;}
+      .rpt-brand{font-family:'Space Grotesk',sans-serif;font-size:13pt;font-weight:700;color:white;letter-spacing:.05em;line-height:1.1;}
+      .rpt-brand-sub{font-size:5.5pt;color:#00AEEF;letter-spacing:.13em;text-transform:uppercase;margin-top:1px;}
+      .rpt-slogan{font-size:6pt;color:rgba(255,255,255,.45);font-style:italic;margin-top:3px;letter-spacing:.02em;}
+      .rpt-hdr-right{text-align:right;}
+      .rpt-doc-label{font-family:'Space Grotesk',sans-serif;font-size:8.5pt;font-weight:700;color:#00AEEF;letter-spacing:.08em;text-transform:uppercase;}
+      .rpt-doc-date{font-size:7pt;color:rgba(255,255,255,.45);margin-top:2px;}
+      .rpt-bar{height:3px;background:linear-gradient(90deg,#00AEEF,#007BB5);}
+
+      /* ── BODY ── */
+      .rpt-body{padding:14px 22px;display:flex;flex-direction:column;gap:12px;}
+
+      /* ── DISCLAIMER ── */
+      .rpt-disc{background:#FFF8E7;border-left:3px solid #F59E0B;padding:7px 11px;font-size:7pt;color:#92400E;line-height:1.55;border-radius:0 4px 4px 0;}
+      .rpt-disc strong{color:#78350F;}
+
+      /* ── VEHICLE BOX ── */
+      .rpt-vehicle{background:#E8F6FD;border:1.5px solid #00AEEF;border-radius:9px;padding:10px 15px;}
+      .rpt-vname{font-family:'Space Grotesk',sans-serif;font-size:14pt;font-weight:700;color:#0A1628;line-height:1.2;}
+      .rpt-vsub{font-size:7pt;color:#6B7A8D;margin-top:3px;letter-spacing:.02em;}
+
+      /* ── TWO COLUMNS ── */
+      .rpt-cols{display:grid;grid-template-columns:1fr 1.55fr;gap:14px;}
+
+      /* ── LEFT: TRANSACTION ── */
+      .rpt-sec-title{font-family:'Space Grotesk',sans-serif;font-size:6.5pt;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#6B7A8D;border-bottom:1px solid #D1DCE8;padding-bottom:4px;margin-bottom:10px;}
+      .rpt-field{margin-bottom:9px;}
+      .rpt-flabel{font-size:6pt;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#9AAABB;}
+      .rpt-fvalue{font-size:10pt;font-weight:600;color:#0A1628;margin-top:2px;font-family:'Space Grotesk',sans-serif;}
+      .rpt-fsub{font-size:6.5pt;color:#9AAABB;margin-top:2px;}
+      .rpt-cif-box{margin-top:11px;padding-top:10px;border-top:1.5px solid #00AEEF;}
+      .rpt-cif-label{font-size:6pt;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#00AEEF;}
+      .rpt-cif-value{font-family:'Space Grotesk',sans-serif;font-size:14pt;font-weight:700;color:#0A1628;margin-top:3px;}
+      .rpt-cif-sub{font-size:6.5pt;color:#9AAABB;margin-top:2px;}
+
+      /* ── RIGHT: CHARGES TABLE ── mirrors the dark on-screen card ── */
+      .rpt-tbl-wrap{background:#0A1628;border-radius:10px;overflow:hidden;}
+      .rpt-tbl-head{background:#00AEEF;padding:8px 11px;font-family:'Space Grotesk',sans-serif;font-size:7pt;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:white;display:flex;justify-content:space-between;}
+      .rpt-tbl{width:100%;border-collapse:collapse;}
+      .rpt-tbl th{background:#1C2E4A;padding:6px 10px;font-family:'Space Grotesk',sans-serif;font-size:6.5pt;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.7);text-align:left;}
+      .rpt-tbl th:last-child{text-align:right;}
+      .rpt-tbl td{padding:7px 10px;font-size:8pt;color:rgba(255,255,255,.85);border-bottom:1px solid rgba(255,255,255,.07);vertical-align:top;}
+      .rpt-tbl td:last-child{text-align:right;font-weight:600;font-family:'Space Grotesk',sans-serif;white-space:nowrap;color:white;}
+      .rpt-tbl .td-sub{font-size:6pt;color:rgba(255,255,255,.38);margin-top:2px;}
+      .rpt-tbl .td-zero td{color:rgba(255,255,255,.28)!important;}
+      .rpt-tbl .td-zero td:last-child{color:rgba(255,255,255,.28)!important;}
+      .rpt-tbl .rpt-total-row td{background:#00AEEF!important;color:white!important;font-family:'Space Grotesk',sans-serif;font-size:10pt;font-weight:700;padding:10px!important;border:none!important;}
+      .rpt-tbl .rpt-total-row td:last-child{font-size:12pt!important;color:white!important;}
+
+      /* ── EXCLUSIONS BOX ── */
+      .rpt-excl{background:white;border:1px solid #D1DCE8;border-radius:9px;padding:11px 14px;}
+      .rpt-excl-head{font-family:'Space Grotesk',sans-serif;font-size:7pt;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:#3a5070;margin-bottom:8px;}
+      .rpt-excl-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px 18px;}
+      .rpt-excl-item{font-size:7pt;color:#4a6080;line-height:1.55;display:flex;gap:6px;align-items:flex-start;}
+      .rpt-excl-item strong{color:#0A1628;display:block;}
+      .rpt-excl-note{margin-top:8px;font-size:6.5pt;color:#9AAABB;border-top:1px solid #E8EDF4;padding-top:6px;}
+      .rpt-excl-note a{color:#00AEEF;text-decoration:none;}
+
+      /* ── REGULATORY NOTES ── */
+      .rpt-reg{background:#1C2E4A;border-radius:9px;padding:11px 14px;}
+      .rpt-reg-head{font-family:'Space Grotesk',sans-serif;font-size:7pt;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:#00AEEF;margin-bottom:8px;}
+      .rpt-reg-body{font-size:7pt;color:rgba(255,255,255,.65);line-height:1.8;}
+      .rpt-reg-body strong{color:rgba(255,255,255,.9);}
+      .rpt-reg-sep{color:rgba(255,255,255,.25);margin:0 4px;}
+
+      /* ── FOOTER ── */
+      .rpt-footer{display:flex;justify-content:space-between;align-items:flex-end;padding-top:10px;border-top:1px solid #D1DCE8;margin-top:2px;}
+      .rpt-footer-left{font-size:7.5pt;color:#6B7A8D;line-height:1.8;}
+      .rpt-footer-left strong{color:#0A1628;}
+      .rpt-footer-left a{color:#00AEEF;text-decoration:none;}
+      .rpt-footer-tagline{font-size:8pt;font-weight:600;color:#0A1628;font-family:'Space Grotesk',sans-serif;font-style:italic;letter-spacing:.02em;}
+      .rpt-watermark{font-size:6pt;color:#B0BEC5;text-align:center;margin-top:8px;font-style:italic;}
+
+      @media print{
+        @page{size:A4;margin:10mm 12mm;}
+        html,body{background:white;}
+        .rpt{width:100%;background:white;}
+      }
+    </style>
+
+    <div class="rpt">
+      <!-- HEADER -->
+      <div class="rpt-hdr">
+        <div class="rpt-hdr-left">
+          <img class="rpt-logo" src="${logoSrc}" alt="Titan Tides" />
+          <div>
+            <div class="rpt-brand">TITAN TIDES</div>
+            <div class="rpt-brand-sub">Logistics</div>
+            <div class="rpt-slogan">Harnessing Strength, Navigating Change</div>
+          </div>
+        </div>
+        <div class="rpt-hdr-right">
+          <div class="rpt-doc-label">Customs Estimate</div>
+          <div class="rpt-doc-date">${vDate}</div>
+        </div>
+      </div>
+      <div class="rpt-bar"></div>
+
+      <div class="rpt-body">
+
+        <!-- DISCLAIMER -->
+        <div class="rpt-disc">
+          <strong>Estimation only.</strong> SARS calculates final charges using the official Rate of Exchange at the Shipped On Board (SOB) date plus the declared customs value. This document is for indicative purposes only and does not constitute a formal customs declaration or SARS assessment.
+        </div>
+
+        <!-- VEHICLE -->
+        <div class="rpt-vehicle">
+          <div class="rpt-vname">${[vYear,vMake,vModel].filter(Boolean).join(' ') || 'Vehicle'}</div>
+          <div class="rpt-vsub">Tariff: ${vTariff}${vCC?' &nbsp;|&nbsp; '+vCC:''}</div>
+        </div>
+
+        <!-- TRANSACTION + CHARGES -->
+        <div class="rpt-cols">
+
+          <!-- LEFT: Transaction details -->
+          <div>
+            <div class="rpt-sec-title">Transaction Details</div>
+            ${foreignAmt && currency!=='ZAR' ? '<div class="rpt-field"><div class="rpt-flabel">Purchase Price</div><div class="rpt-fvalue">'+currency+' '+parseFloat(foreignAmt).toLocaleString('en-ZA',{minimumFractionDigits:2})+'</div></div>' : ''}
+            ${fxRate && currency!=='ZAR' ? '<div class="rpt-field"><div class="rpt-flabel">Rate of Exchange (ROE)</div><div class="rpt-fvalue">1.00 '+currency+' = R '+fxRate+'</div><div class="rpt-fsub">SARS uses the official SOB date ROE</div></div>' : ''}
+            <div class="rpt-field"><div class="rpt-flabel">Vehicle Value (ZAR)</div><div class="rpt-fvalue">${fmtR(parseFloat(zarVal))}</div></div>
+            ${freightVal>0?'<div class="rpt-field"><div class="rpt-flabel">Freight (ZAR)</div><div class="rpt-fvalue">'+fmtR(freightVal)+'</div></div>':''}
+            ${insVal>0?'<div class="rpt-field"><div class="rpt-flabel">Insurance (ZAR)</div><div class="rpt-fvalue">'+fmtR(insVal)+'</div></div>':''}
+            <div class="rpt-cif-box">
+              <div class="rpt-cif-label">Total Customs Value</div>
+              <div class="rpt-cif-value">${fmtR(cifVal)}</div>
+              <div class="rpt-cif-sub">SARS bases all duties on this figure</div>
+            </div>
+          </div>
+
+          <!-- RIGHT: Charges table (dark card) -->
+          <div>
+            <div class="rpt-sec-title" style="color:#9AAABB;border-color:rgba(255,255,255,.1);">Customs Charges Breakdown</div>
+            <div class="rpt-tbl-wrap">
+              <table class="rpt-tbl">
+                <thead>
+                  <tr>
+                    <th>Charge</th>
+                    <th>Amount (ZAR)</th>
+                  </tr>
+                </thead>
+                <tbody id="prTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+        </div><!-- end cols -->
+
+        <!-- EXCLUSIONS -->
+        <div class="rpt-excl">
+          <div class="rpt-excl-head">⚠️ What This Estimate Excludes</div>
+          <div class="rpt-excl-grid">
+            <div class="rpt-excl-item"><span>🚢</span><div><strong>Port &amp; Terminal Charges</strong>Handling, THC, container examination</div></div>
+            <div class="rpt-excl-item"><span>🏗️</span><div><strong>Storage &amp; Demurrage</strong>Container storage and detention fees</div></div>
+            <div class="rpt-excl-item"><span>📋</span><div><strong>Customs Broker / Agent Fees</strong>Clearing and forwarding agent fees</div></div>
+            <div class="rpt-excl-item"><span>🚛</span><div><strong>Inland Transport</strong>Delivery from port to destination</div></div>
+            <div class="rpt-excl-item"><span>🔍</span><div><strong>Inspection &amp; Compliance</strong>NRCS, RVI, roadworthy certificate</div></div>
+            <div class="rpt-excl-item"><span>📝</span><div><strong>Licensing &amp; Registration</strong>NATIS registration, number plates</div></div>
+          </div>
+          <div class="rpt-excl-note">Contact <a href="mailto:info@titantides.com">info@titantides.com</a> for a full landed cost quotation including all of the above.</div>
+        </div>
+
+        <!-- REGULATORY NOTES (dark panel) -->
+        <div class="rpt-reg">
+          <div class="rpt-reg-head">📋 Rebate &amp; Regulatory Reference</div>
+          <div class="rpt-reg-body">
+            <strong>Customs Duty</strong> (Sch. 1, Part 1) — on Total Customs Value at the country-of-origin rate
+            <span class="rpt-reg-sep">|</span>
+            <strong>Ad Valorem Excise Duty</strong> (Sch. 1, Part 2B) — sliding scale [(0.00003 × B) − 0.75]%, capped at <strong>30%</strong>
+            <span class="rpt-reg-sep">|</span>
+            <strong>Age Rebates</strong> (Sch. 4, C&amp;E Act 1964 — Rebate 460.17/04.04): &gt;20 yrs = 5% rebate on Ad Valorem; &gt;40 yrs = 25% rebate (subject to SARS approval) — rebates affect Ad Valorem only
+            <span class="rpt-reg-sep">|</span>
+            <strong>VAT 15%</strong> (VAT Act s.7(1)(b)) — on ATV = Customs Value + 10% uplift + Duty + Ad Valorem + CO₂ Levy
+            <span class="rpt-reg-sep">|</span>
+            <strong>Tyre Levy</strong> (Sch. 1, Part 3E) — R230 per vehicle
+            <span class="rpt-reg-sep">|</span>
+            <strong>CO₂ Levy</strong> (Sch. 1, Part 3A) — second-hand vehicles exempt
+          </div>
+        </div>
+
+        <!-- FOOTER -->
+        <div class="rpt-footer">
+          <div class="rpt-footer-left">
+            <strong>Titan Tides Logistics</strong><br/>
+            <a href="https://www.titantides.com">www.titantides.com</a> &nbsp;|&nbsp;
+            <a href="mailto:info@titantides.com">info@titantides.com</a> &nbsp;|&nbsp;
+            +27 21 001 2498
+          </div>
+          <div style="text-align:right;">
+            <div class="rpt-footer-tagline">Driving Legends Home</div>
+            <div class="rpt-footer-right" style="margin-top:3px;">Titan Customs v2.1 &nbsp;·&nbsp; titantidesportal.github.io/Titan-Customs</div>
+          </div>
+        </div>
+        <div class="rpt-watermark">Generated ${new Date().toLocaleString('en-ZA')} &nbsp;·&nbsp; Estimate only — not a SARS assessment</div>
+
+      </div><!-- end body -->
+    </div><!-- end rpt -->`
+    const tbody = document.getElementById('prTableBody');
+    document.querySelectorAll('#resultsBody .result-line').forEach(line => {
+      const lbl = line.querySelector('.rl-label');
+      const val = line.querySelector('.rl-value');
+      if (!lbl || !val) return;
+      const sub = lbl.querySelector('.rl-sub');
+      const lblText = lbl.childNodes[0].textContent.trim();
+      const subText = sub ? sub.textContent.trim() : '';
+      const isZero  = val.classList.contains('zero');
+      tbody.innerHTML += `<tr class="${isZero?'zero-row':''}"><td>${lblText}${subText?'<div class="td-sub">'+subText+'</div>':''}</td><td>${val.textContent.trim()}</td></tr>`;
+    });
+    const totalVal = document.querySelector('#resultsBody .tl-value');
+    if (totalVal) tbody.innerHTML += `<tr class="pr-total-row"><td>TOTAL ESTIMATED CUSTOMS</td><td>${totalVal.textContent.trim()}</td></tr>`;
+
+    // Smart filename
+    const parts = [vYear,vMake,vModel].filter(Boolean).join('-').replace(/\s+/g,'-');
+    const origTitle = document.title;
+    document.title = 'TitanCustoms_' + new Date().toISOString().slice(0,10) + (parts?'_'+parts:'') + '_Estimate';
+    // Show the print report, trigger print, then hide again
+    const reportEl = document.getElementById('printReport');
+    reportEl.style.display = 'block';
+    setTimeout(() => {
+      window.print();
+      setTimeout(() => {
+        document.title = origTitle;
+      }, 1500);
+    }, 400);
+  }
+</script>
+</body>
+</html>
